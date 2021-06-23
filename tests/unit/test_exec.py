@@ -8,6 +8,7 @@ import sys
 sys.path.insert(1, '../..')
 
 from torch_object_detection_segmenter import TorchObjectDetectionSegmenter
+from jina import Document, DocumentArray
 
 import os
 from unittest.mock import patch
@@ -68,7 +69,8 @@ def test_encoding_mock_model_results():
                                                                   1: 'one',
                                                                   2: 'two',
                                                                   3: 'three'})
-        docs_chunks = segmenter.segment(np.stack([img_array, img_array]))
+        test_docs = DocumentArray([Document(blob=np.stack([img_array, img_array]))])
+        docs_chunks = segmenter.segment(test_docs)
         assert len(docs_chunks) == 2
         for chunks in docs_chunks:
             assert len(chunks) == 2
@@ -112,6 +114,7 @@ def test_encoding_fasterrcnn_results_real_image():
     img = img.convert('RGB')
     img_array = np.array(img).astype('float32') / 255
     segmenter = TorchObjectDetectionSegmenter(channel_axis=-1, confidence_threshold=0.9)
+    test_docs = DocumentArray()
     docs_chunks = segmenter.segment(np.stack([img_array, img_array]))
     assert len(docs_chunks) == 2
     for chunks in docs_chunks:

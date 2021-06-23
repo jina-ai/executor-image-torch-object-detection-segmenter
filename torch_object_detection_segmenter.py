@@ -1,10 +1,11 @@
 __copyright__ = "Copyright (c) 2020-2021 Jina AI Limited. All rights reserved."
 __license__ = "Apache-2.0"
 
-from typing import Dict, List, Union, Tuple
+from typing import Dict, List, Union, Tuple, Optional
 import logging
 import numpy as np
-from jina import Document, DocumentArray, Executor
+from jina import Document, DocumentArray, Executor, requests
+import torchvision.models.detection as detection_models
 
 
 class TorchObjectDetectionSegmenter(Executor):
@@ -40,7 +41,7 @@ class TorchObjectDetectionSegmenter(Executor):
         'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush'
     ]
 
-    def __init__(self, model_name: str = None,
+    def __init__(self, model_name: Optional[str] = None,
                  on_gpu: bool = False,
                  channel_axis: int = 0,
                  confidence_threshold: float = 0.0,
@@ -58,17 +59,8 @@ class TorchObjectDetectionSegmenter(Executor):
         self.label_name_map = label_name_map
         if self.label_name_map is None:
             self.label_name_map = TorchObjectDetectionSegmenter.COCO_INSTANCE_CATEGORY_NAMES
-        import torchvision.models.detection as detection_models
         model = getattr(detection_models, self.model_name)(pretrained=True, pretrained_backbone=True)
         self.model = model.eval()
-
-    # def post_init(self):
-    #     super().post_init()
-    #     self._device = None
-    #     import torchvision.models.detection as detection_models
-    #     model = getattr(detection_models, self.model_name)(pretrained=True, pretrained_backbone=True)
-    #     self.model = model.eval()
-    #     self.to_device(self.model)
 
     def _predict(self, batch: 'np.ndarray') -> 'np.ndarray':
         """
@@ -84,10 +76,10 @@ class TorchObjectDetectionSegmenter(Executor):
 
         return self.model(_input)
 
-
-    def segment(self, blob: 'np.ndarray', *args, **kwargs) -> List[Dict]:
+    @requests
+    def segment(self, docs: DocumentArray, *args, **kwargs) -> List[Dict]:
         """
-        Crop the input image array.
+        Crop the input image array within DocumentArray.
         :param blob: the ndarray of the image
         :return: a list of chunk dicts with the cropped images
         :param args:  Additional positional arguments
@@ -160,8 +152,8 @@ class TorchObjectDetectionSegmenter(Executor):
             img = img.crop((w_beg, h_beg, w_end, h_end))
             return img, h_beg, w_beg
 
-
-        batch = np.copy(blob) # (2, 681, 1264, 3) with imgs/cars.jpg
+        blob = docs.get_attributes('blob')
+        batch = np.copy(blob[0]) # (2, 681, 1264, 3) with imgs/cars.jpg
         # "Ensure the color channel axis is the default axis." i.e. c comes first
         # e.g. (h,w,c) -> (c,h,w) / (b,h,w,c) -> (b,c,h,w)
         batch = _move_channel_axis(batch, self.channel_axis, self._default_channel_axis + 1) # take batching into account
