@@ -51,7 +51,7 @@ class TorchObjectDetectionSegmenter(Executor):
         self.model_name = model_name
         self.on_gpu = on_gpu
         if self.model_name is None:
-            self.model_name = 'fasterrcnn_resnet50_fpn'
+            self.model_name = model_name or 'fasterrcnn_resnet50_fpn'
         self.channel_axis = channel_axis
         self._default_channel_axis = 0
         self.confidence_threshold = confidence_threshold
