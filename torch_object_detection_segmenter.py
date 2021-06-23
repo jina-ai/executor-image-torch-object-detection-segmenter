@@ -45,20 +45,16 @@ class TorchObjectDetectionSegmenter(Executor):
                  on_gpu: bool = False,
                  channel_axis: int = 0,
                  confidence_threshold: float = 0.0,
-                 label_name_map: Dict[int, str] = None,
+                 label_name_map: Optional[Dict[int, str]] = None,
                  *args, **kwargs):
         """Set constructor"""
         super().__init__(*args, **kwargs)
-        self.model_name = model_name
         self.on_gpu = on_gpu
-        if self.model_name is None:
-            self.model_name = model_name or 'fasterrcnn_resnet50_fpn'
+        self.model_name = model_name or 'fasterrcnn_resnet50_fpn'
         self.channel_axis = channel_axis
         self._default_channel_axis = 0
         self.confidence_threshold = confidence_threshold
-        self.label_name_map = label_name_map
-        if self.label_name_map is None:
-            self.label_name_map = TorchObjectDetectionSegmenter.COCO_INSTANCE_CATEGORY_NAMES
+        self.label_name_map = label_name_map or TorchObjectDetectionSegmenter.COCO_INSTANCE_CATEGORY_NAMES
         model = getattr(detection_models, self.model_name)(pretrained=True, pretrained_backbone=True)
         self.model = model.eval()
 
@@ -152,6 +148,9 @@ class TorchObjectDetectionSegmenter(Executor):
             img = img.crop((w_beg, h_beg, w_end, h_end))
             return img, h_beg, w_beg
 
+        if not docs:
+            return
+
         blob = docs.get_attributes('blob')
         batch = np.copy(blob[0]) # (2, 681, 1264, 3) with imgs/cars.jpg
         # "Ensure the color channel axis is the default axis." i.e. c comes first
@@ -160,7 +159,8 @@ class TorchObjectDetectionSegmenter(Executor):
 
         batched_predictions = self._predict(batch)
 
-        result = []
+        #result = []
+        i = 0
         for image, predictions in zip(batch, batched_predictions):
             bboxes = predictions['boxes'].detach()
             scores = predictions['scores'].detach()
@@ -186,9 +186,13 @@ class TorchObjectDetectionSegmenter(Executor):
                     logging.debug(
                         f'detected {label_name} with confidence {score} at position {(top, left)} and size {target_size}')
                     batched.append(
-                        dict(offset=0, weight=1., blob=_img,
-                             location=(top, left), tags={'label': label_name}))
+                        Document(dict(offset=0, weight=1., blob=_img,
+                             location=[top, left], tags={'label': label_name})))
 
-            result.append(batched)
+            #result.append(batched)
+            # create a chunk for each of the objects detected for each image
 
-        return result
+            docs[i].chunks = batched
+            i += 1
+
+        #return result
