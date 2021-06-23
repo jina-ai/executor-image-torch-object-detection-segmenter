@@ -1,12 +1,6 @@
-# 📝 PLEASE READ [THE GUIDELINES](.github/GUIDELINES.md) BEFORE STARTING.
+# ✨ TorchObjectDetectionSegmenter
 
-# 🏗️ PLEASE CHECK OUT [STEP-BY-STEP](.github/STEP_BY_STEP.md)
-
-----
-
-# ✨ MyDummyExecutor
-
-**MyDummyExecutor** is a class that ...
+**TorchObjectDetectionSegmenter** is a class that ...
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -33,7 +27,7 @@ Use the prebuilt images from JinaHub in your python codes,
 ```python
 from jina import Flow
 	
-f = Flow().add(uses='jinahub+docker://MyDummyExecutor')
+f = Flow().add(uses='jinahub+docker://TorchObjectDetectionSegmenter')
 ```
 
 or in the `.yml` config.
@@ -42,7 +36,7 @@ or in the `.yml` config.
 jtype: Flow
 pods:
   - name: encoder
-    uses: 'jinahub+docker://MyDummyExecutor'
+    uses: 'jinahub+docker://TorchObjectDetectionSegmenter'
 ```
 
 #### using source codes
@@ -51,7 +45,7 @@ Use the source codes from JinaHub in your python codes,
 ```python
 from jina import Flow
 	
-f = Flow().add(uses='jinahub://MyDummyExecutor')
+f = Flow().add(uses='jinahub://TorchObjectDetectionSegmenter')
 ```
 
 or in the `.yml` config.
@@ -60,25 +54,25 @@ or in the `.yml` config.
 jtype: Flow
 pods:
   - name: encoder
-    uses: 'jinahub://MyDummyExecutor'
+    uses: 'jinahub://TorchObjectDetectionSegmenter'
 ```
 
 
 ### 📦️ Via Pypi
 
-1. Install the `jinahub-MY-DUMMY-EXECUTOR` package.
+1. Install the `jinahub-executor-image-torch-object-detection-segmenter` package.
 
 	```bash
-	pip install git+https://github.com/jina-ai/EXECUTOR_REPO_NAME.git
+	pip install git+https://github.com/jina-ai/executor-image-torch-object-detection-segmenter.git
 	```
 
-1. Use `jinahub-MY-DUMMY-EXECUTOR` in your code
+1. Use `jinahub-executor-image-torch-object-detection-segmenter` in your code
 
 	```python
 	from jina import Flow
-	from jinahub.SUB_PACKAGE_NAME.MODULE_NAME import MyDummyExecutor
+	from jinahub.segmenter.torch_object_detection_segmenter import TorchObjectDetectionSegmenter
 	
-	f = Flow().add(uses=MyDummyExecutor)
+	f = Flow().add(uses=TorchObjectDetectionSegmenter)
 	```
 
 
@@ -89,15 +83,15 @@ pods:
 	```shell
 	git clone https://github.com/jina-ai/EXECUTOR_REPO_NAME.git
 	cd EXECUTOR_REPO_NAME
-	docker build -t my-dummy-executor-image .
+	docker build -t executor-image-torch-object-detection-segmenter .
 	```
 
-1. Use `my-dummy-executor-image` in your codes
+1. Use `executor-image-torch-object-detection-segmenter` in your codes
 
 	```python
 	from jina import Flow
 	
-	f = Flow().add(uses='docker://my-dummy-executor-image:latest')
+	f = Flow().add(uses='docker://executor-image-torch-object-detection-segmenter:latest')
 	```
 	
 
@@ -107,7 +101,7 @@ pods:
 ```python
 from jina import Flow, Document
 
-f = Flow().add(uses='jinahub+docker://MyDummyExecutor')
+f = Flow().add(uses='jinahub+docker://TorchObjectDetectionSegmenter')
 
 with f:
     resp = f.post(on='foo', inputs=Document(), return_resutls=True)

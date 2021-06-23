@@ -4,18 +4,18 @@ __license__ = "Apache-2.0"
 import setuptools
 
 setuptools.setup(
-    name='jinahub-MY-DUMMY-EXECUTOR',
+    name='jinahub-torch-object-detection-segmenter',
     version='1',
     author='Jina Dev Team',
     author_email='dev-team@jina.ai',
-    description='This is my dummy executor',
-    url='https://github.com/jina-ai/EXECUTOR_REPO_NAME',
+    description='Torch Object Detection Segmenter',
+    url='https://github.com/executor-image-torch-object-detection-segmenter',
     classifiers=[
         'Programming Language :: Python :: 3',
         'Operating System :: OS Independent',
     ],
-    py_modules=['jinahub.SUB_PACKAGE_NAME.MODULE_NAME'],
-    package_dir={'jinahub.SUB_PACKAGE_NAME': '.'},
+    py_modules=['jinahub.segmenter.torch_object_detection_segmenter'],
+    package_dir={'jinahub.segmenter': '.'},
     install_requires=open('requirements.txt').readlines(),
     python_requires='>=3.7',
 )

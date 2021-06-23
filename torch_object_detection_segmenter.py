@@ -7,7 +7,7 @@ import numpy as np
 from jina import Executor, DocumentArray, requests
 
 
-class MyDummyExecutor(Executor):
+class TorchObjectDetectionSegmenter(Executor):
     """
     Encode the Document blob into embedding.
 
