@@ -57,7 +57,7 @@ class TorchObjectDetectionSegmenter(Executor):
         self.confidence_threshold = confidence_threshold
         self.label_name_map = label_name_map
         if self.label_name_map is None:
-            self.label_name_map = TorchObjectDetectionSegmenter.COCO_INSTANCE_CATEGORY_NAMES
+            self.label_name_map = label_name_map or TorchObjectDetectionSegmenter.COCO_INSTANCE_CATEGORY_NAMES
         import torchvision.models.detection as detection_models
         model = getattr(detection_models, self.model_name)(pretrained=True, pretrained_backbone=True)
         self.model = model.eval()
