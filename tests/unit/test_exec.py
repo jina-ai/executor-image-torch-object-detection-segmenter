@@ -64,7 +64,6 @@ def test_encoding_mock_model_results():
                                                                   1: 'one',
                                                                   2: 'two',
                                                                   3: 'three'})
-        #test_docs = DocumentArray([Document(blob=np.stack([img_array, img_array]))])
         test_docs = DocumentArray([Document(blob=img_array), Document(blob=img_array)])
         segmenter.segment(test_docs)
         docs_chunks = test_docs.get_attributes('chunks')

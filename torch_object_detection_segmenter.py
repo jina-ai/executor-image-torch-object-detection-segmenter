@@ -4,12 +4,14 @@ __license__ = "Apache-2.0"
 
 import logging
 import numpy as np
-from typing import Dict, List, Union, Tuple, Optional
+from typing import Dict, List, Union, Tuple, Optional, Any
 import torchvision.models.detection as detection_models
 
 from jina import Document, DocumentArray, Executor, requests
 
-
+def _batch_generator(data: List[Any], batch_size: int):
+    for i in range(0, len(data), batch_size):
+        yield data[i: i + batch_size]
 
 class TorchObjectDetectionSegmenter(Executor):
     """
@@ -47,6 +49,7 @@ class TorchObjectDetectionSegmenter(Executor):
     def __init__(self, model_name: Optional[str] = None,
                  on_gpu: bool = False,
                  channel_axis: int = 0,
+                 default_batch_size: int = 32,
                  confidence_threshold: float = 0.0,
                  label_name_map: Optional[Dict[int, str]] = None,
                  *args, **kwargs):
@@ -56,6 +59,7 @@ class TorchObjectDetectionSegmenter(Executor):
         self.model_name = model_name or 'fasterrcnn_resnet50_fpn'
         self.channel_axis = channel_axis
         self._default_channel_axis = 0
+        self._default_batch_size = default_batch_size
         self.confidence_threshold = confidence_threshold
         self.label_name_map = label_name_map or TorchObjectDetectionSegmenter.COCO_INSTANCE_CATEGORY_NAMES
         model = getattr(detection_models, self.model_name)(pretrained=True, pretrained_backbone=True)
@@ -76,7 +80,7 @@ class TorchObjectDetectionSegmenter(Executor):
         return self.model(_input)
 
     @requests
-    def segment(self, docs: DocumentArray, *args, **kwargs) -> List[Dict]:
+    def segment(self, docs: DocumentArray, parameters: dict, *args, **kwargs) -> List[Dict]:
         """
         Crop the input image array within DocumentArray.
         :param blob: the ndarray of the image
@@ -154,7 +158,12 @@ class TorchObjectDetectionSegmenter(Executor):
         if not docs:
             return
 
-        batch = docs.get_attributes('blob') # (2, 681, 1264, 3) with imgs/cars.jpg
+        batch_size = parameters.get('batch_size', self._default_batch_size)
+        print(f'batch_size {batch_size}')
+        assert(False)
+        assert(batch_size==1)
+        batch = _batch_generator(docs, batch_size)
+        # the blob dimension of imgs/cars.jpg at this point is (2, 681, 1264, 3)
         # "Ensure the color channel axis is the default axis." i.e. c comes first
         # e.g. (h,w,c) -> (c,h,w) / (b,h,w,c) -> (b,c,h,w)
         batch = _move_channel_axis(batch, self.channel_axis, self._default_channel_axis + 1) # take batching into account
@@ -187,8 +196,6 @@ class TorchObjectDetectionSegmenter(Executor):
                         f'detected {label_name} with confidence {score} at position {(top, left)} and size {target_size}')
 
                     # a chunk is created for each of the objects detected for each image
-                    d = Document(dict(offset=0, weight=1.,
-                             location=[top, left], tags={'label': label_name}))
-                    d.blob = _img
+                    d = Document(offset=0, weight=1., blob = _img, location=[top, left], tags={'label': label_name})
 
                     docs[i].chunks.append(d)
