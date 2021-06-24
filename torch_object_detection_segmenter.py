@@ -169,7 +169,6 @@ class TorchObjectDetectionSegmenter(Executor):
                 labels = labels.cpu()
             img = _load_image(image * 255, self._default_channel_axis)
 
-            batched = []
             for bbox, score, label in zip(bboxes.numpy(), scores.numpy(), labels.numpy()):
                 if score >= self.confidence_threshold:
                     x0, y0, x1, y1 = bbox
@@ -184,11 +183,9 @@ class TorchObjectDetectionSegmenter(Executor):
                     logging.debug(
                         f'detected {label_name} with confidence {score} at position {(top, left)} and size {target_size}')
 
+                    # a chunk is created for each of the objects detected for each image
                     d = Document(dict(offset=0, weight=1.,
                              location=[top, left], tags={'label': label_name}))
                     d.blob = _img
-                    batched.append(d)
 
-            # create a chunk for each of the objects detected for each image
-
-            docs[i].chunks = batched
+                    docs[i].chunks.append(d)
