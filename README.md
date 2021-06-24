@@ -1,6 +1,6 @@
 # ✨ TorchObjectDetectionSegmenter
 
-**TorchObjectDetectionSegmenter** is a class that ...
+**TorchObjectDetectionSegmenter** is a class that supports object detection and segmentation using PyTorch with Faster R-CNN and Mask R-CNN models.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -14,8 +14,7 @@
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## 🌱 Prerequisites
-
-Some conditions to fulfill before running the executor
+None
 
 ## 🚀 Usages
 
@@ -110,13 +109,14 @@ with f:
 
 ### Inputs 
 
-`Document` with `blob` of the shape `256`.
+`Document` whose `blob` stores the image to be detected.
 
 ### Returns
 
-`Document` with `embedding` fields filled with an `ndarray` of the shape `embedding_dim` (=128, by default) with `dtype=nfloat32`.
+`Document` with `chunks` that contain the original image in `blob`, bounding box coordinates of objects detected in `location`, and image label key value pair in `tags`.
 
 
 ## 🔍️ Reference
-- Some reference
+- [Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks](https://arxiv.org/abs/1506.01497)
+- [Mask R-CNN](https://arxiv.org/abs/1703.06870)
 
