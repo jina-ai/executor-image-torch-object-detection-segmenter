@@ -58,14 +58,14 @@ class TorchObjectDetectionSegmenter(Executor):
         model = getattr(detection_models, self.model_name)(pretrained=True, pretrained_backbone=True)
         self.model = model.eval()
 
-    def _predict(self, batch: 'np.ndarray') -> 'np.ndarray':
+    def _predict(self, batch: List[np.ndarray]) -> 'np.ndarray':
         """
         Run the model for prediction
         :param img: the image from which to run a prediction
         :return: the boxes, scores and labels predicted
         """
         import torch
-        _input = torch.from_numpy(batch.astype('float32'))
+        _input = torch.from_numpy(np.stack(batch).astype('float32'))
 
         if self.on_gpu:
             _input = _input.cuda()
@@ -151,15 +151,14 @@ class TorchObjectDetectionSegmenter(Executor):
         if not docs:
             return
 
-        blob = docs.get_attributes('blob')
-        batch = np.copy(blob[0]) # (2, 681, 1264, 3) with imgs/cars.jpg
+        batch = docs.get_attributes('blob')
+        #batch = np.copy(blob[0]) # (2, 681, 1264, 3) with imgs/cars.jpg
         # "Ensure the color channel axis is the default axis." i.e. c comes first
         # e.g. (h,w,c) -> (c,h,w) / (b,h,w,c) -> (b,c,h,w)
         batch = _move_channel_axis(batch, self.channel_axis, self._default_channel_axis + 1) # take batching into account
 
         batched_predictions = self._predict(batch)
 
-        #result = []
         i = 0
         for image, predictions in zip(batch, batched_predictions):
             bboxes = predictions['boxes'].detach()
@@ -185,9 +184,13 @@ class TorchObjectDetectionSegmenter(Executor):
                     label_name = self.label_name_map[label]
                     logging.debug(
                         f'detected {label_name} with confidence {score} at position {(top, left)} and size {target_size}')
-                    batched.append(
-                        Document(dict(offset=0, weight=1., blob=_img,
-                             location=[top, left], tags={'label': label_name})))
+
+                    d = Document(dict(offset=0, weight=1.,
+                             location=[top, left], tags={'label': label_name}))
+                    d.blob = _img
+                    #d.convert_image_blob_to_uri(128, 64)
+                    batched.append(d)
+
 
             #result.append(batched)
             # create a chunk for each of the objects detected for each image
@@ -195,4 +198,8 @@ class TorchObjectDetectionSegmenter(Executor):
             docs[i].chunks = batched
             i += 1
 
+        # chunks = docs.get_attributes('chunks')
+        # for cArr in chunks:
+        #     for c in cArr:
+        #         print(c.uri)
         #return result
