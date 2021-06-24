@@ -151,16 +151,15 @@ class TorchObjectDetectionSegmenter(Executor):
         if not docs:
             return
 
-        batch = docs.get_attributes('blob')
-        #batch = np.copy(blob[0]) # (2, 681, 1264, 3) with imgs/cars.jpg
+        batch = docs.get_attributes('blob') # (2, 681, 1264, 3) with imgs/cars.jpg
         # "Ensure the color channel axis is the default axis." i.e. c comes first
         # e.g. (h,w,c) -> (c,h,w) / (b,h,w,c) -> (b,c,h,w)
         batch = _move_channel_axis(batch, self.channel_axis, self._default_channel_axis + 1) # take batching into account
 
         batched_predictions = self._predict(batch)
 
-        i = 0
-        for image, predictions in zip(batch, batched_predictions):
+
+        for i, (image, predictions) in enumerate(zip(batch, batched_predictions)):
             bboxes = predictions['boxes'].detach()
             scores = predictions['scores'].detach()
             labels = predictions['labels']
@@ -188,18 +187,8 @@ class TorchObjectDetectionSegmenter(Executor):
                     d = Document(dict(offset=0, weight=1.,
                              location=[top, left], tags={'label': label_name}))
                     d.blob = _img
-                    #d.convert_image_blob_to_uri(128, 64)
                     batched.append(d)
 
-
-            #result.append(batched)
             # create a chunk for each of the objects detected for each image
 
             docs[i].chunks = batched
-            i += 1
-
-        # chunks = docs.get_attributes('chunks')
-        # for cArr in chunks:
-        #     for c in cArr:
-        #         print(c.uri)
-        #return result
