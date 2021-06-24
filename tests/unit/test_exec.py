@@ -1,16 +1,15 @@
 __copyright__ = "Copyright (c) 2020-2021 Jina AI Limited. All rights reserved."
 __license__ = "Apache-2.0"
 
-from jina.executors import BaseExecutor
-from jinahub.segmenter.torch_object_detection_segmenter import TorchObjectDetectionSegmenter
-
-from jina import Document, DocumentArray
 
 import os
-from unittest.mock import patch
-
 import numpy as np
 from PIL import Image
+from unittest.mock import patch
+
+from jina import Document, DocumentArray
+from jinahub.segmenter.torch_object_detection_segmenter import TorchObjectDetectionSegmenter
+
 
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

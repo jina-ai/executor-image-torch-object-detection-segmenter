@@ -1,11 +1,14 @@
 __copyright__ = "Copyright (c) 2020-2021 Jina AI Limited. All rights reserved."
 __license__ = "Apache-2.0"
 
-from typing import Dict, List, Union, Tuple, Optional
+
 import logging
 import numpy as np
-from jina import Document, DocumentArray, Executor, requests
+from typing import Dict, List, Union, Tuple, Optional
 import torchvision.models.detection as detection_models
+
+from jina import Document, DocumentArray, Executor, requests
+
 
 
 class TorchObjectDetectionSegmenter(Executor):
