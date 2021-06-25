@@ -9,7 +9,7 @@ import torchvision.models.detection as detection_models
 
 from jina import Document, DocumentArray, Executor, requests
 
-def _batch_generator(data: DocumentArray, batch_size: int) -> DocumentArray:
+def _batch_generator(data: List[Any], batch_size: int):
     for i in range(0, len(data), batch_size):
         yield data[i: i + batch_size]
 
@@ -49,6 +49,7 @@ class TorchObjectDetectionSegmenter(Executor):
     def __init__(self, model_name: Optional[str] = None,
                  on_gpu: bool = False,
                  channel_axis: int = 0,
+                 default_traversal_paths: List[str] = ['r'],
                  default_batch_size: int = 32,
                  confidence_threshold: float = 0.0,
                  label_name_map: Optional[Dict[int, str]] = None,
@@ -61,10 +62,10 @@ class TorchObjectDetectionSegmenter(Executor):
         self.channel_axis = channel_axis
         self._default_channel_axis = 0
         self._default_batch_size = default_batch_size
+        self._default_traversal_paths = default_traversal_paths
         self.confidence_threshold = confidence_threshold
         self.label_name_map = label_name_map or TorchObjectDetectionSegmenter.COCO_INSTANCE_CATEGORY_NAMES
-        self.model = getattr(detection_models, self.model_name)(pretrained=True, pretrained_backbone=True)
-        self.model.eval()
+        self.model = getattr(detection_models, self.model_name)(pretrained=True, pretrained_backbone=True).eval()
 
     def _predict(self, batch: List[np.ndarray]) -> 'np.ndarray':
         """
@@ -156,11 +157,24 @@ class TorchObjectDetectionSegmenter(Executor):
             img = img.crop((w_beg, h_beg, w_end, h_end))
             return img, h_beg, w_beg
 
+        def _get_input_data(docs: DocumentArray, parameters: dict):
+            traversal_paths = parameters.get('traversal_paths', self._default_traversal_paths)
+            batch_size = parameters.get('batch_size', self._default_batch_size)
+
+            # traverse thought all documents which have to be processed
+            flat_docs = docs.traverse_flat(traversal_paths)
+
+            # filter out documents without images
+            filtered_docs = [doc for doc in flat_docs if doc.blob is not None]
+
+            return _batch_generator(filtered_docs, batch_size)
+
         if not docs:
             return
 
-        batch_size = parameters.get('batch_size', self._default_batch_size)
-        batch = list(_batch_generator(docs, batch_size))[0]
+
+        batch = _get_input_data(docs, parameters)
+        batch = DocumentArray(list(batch)[0])
         batch = batch.get_attributes('blob')
 
         # the blob dimension of imgs/cars.jpg at this point is (2, 681, 1264, 3)
@@ -169,7 +183,6 @@ class TorchObjectDetectionSegmenter(Executor):
         batch = _move_channel_axis(batch, self.channel_axis, self._default_channel_axis + 1) # take batching into account
 
         batched_predictions = self._predict(batch)
-        print(batched_predictions)
 
         for i, (image, predictions) in enumerate(zip(batch, batched_predictions)):
             bboxes = predictions['boxes'].detach()
@@ -182,10 +195,7 @@ class TorchObjectDetectionSegmenter(Executor):
             img = _load_image(image * 255, self._default_channel_axis)
 
             for bbox, score, label in zip(bboxes.numpy(), scores.numpy(), labels.numpy()):
-                print(score)
-                print(self.confidence_threshold)
                 if score >= self.confidence_threshold:
-                    print('wtf')
                     x0, y0, x1, y1 = bbox
                     # note that tensors are [H, W] while PIL Images are [W, H]
                     top, left = int(y0), int(x0)
