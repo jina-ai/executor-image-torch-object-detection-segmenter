@@ -69,6 +69,7 @@ def test_encoding_mock_model_results():
         docs_chunks = test_docs.get_attributes('chunks')
         assert len(docs_chunks) == 2
         for chunks in docs_chunks:
+            # print(f'chunks {chunks}') dunno why it's two pairs of duplicate chunks
             assert len(chunks) == 2
             assert chunks[0].blob.shape == (25, 20, 3)
             assert chunks[0].location == [15, 10]

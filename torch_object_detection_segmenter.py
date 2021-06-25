@@ -9,6 +9,7 @@ import torchvision.models.detection as detection_models
 
 from jina import Document, DocumentArray, Executor, requests
 
+
 def _batch_generator(data: List[Any], batch_size: int):
     for i in range(0, len(data), batch_size):
         yield data[i: i + batch_size]
@@ -173,41 +174,41 @@ class TorchObjectDetectionSegmenter(Executor):
             return
 
 
-        batch = _get_input_data(docs, parameters)
-        batch = DocumentArray(list(batch)[0])
-        batch = batch.get_attributes('blob')
+        batch = _get_input_data(docs, parameters) # a generator of batches of docs
 
-        # the blob dimension of imgs/cars.jpg at this point is (2, 681, 1264, 3)
-        # "Ensure the color channel axis is the default axis." i.e. c comes first
-        # e.g. (h,w,c) -> (c,h,w) / (b,h,w,c) -> (b,c,h,w)
-        batch = _move_channel_axis(batch, self.channel_axis, self._default_channel_axis + 1) # take batching into account
+        for i, docs_batch in enumerate(batch):
+            # the blob dimension of imgs/cars.jpg at this point is (2, 681, 1264, 3)
+            # "Ensure the color channel axis is the default axis." i.e. c comes first
+            # e.g. (h,w,c) -> (c,h,w) / (b,h,w,c) -> (b,c,h,w)
+            blob_batch = [_move_channel_axis(d.blob, self.channel_axis,
+                                       self._default_channel_axis) for d in docs_batch]
 
-        batched_predictions = self._predict(batch)
+            all_predictions = self._predict(blob_batch)
 
-        for i, (image, predictions) in enumerate(zip(batch, batched_predictions)):
-            bboxes = predictions['boxes'].detach()
-            scores = predictions['scores'].detach()
-            labels = predictions['labels']
-            if self.on_gpu:
-                bboxes = bboxes.cpu()
-                scores = scores.cpu()
-                labels = labels.cpu()
-            img = _load_image(image * 255, self._default_channel_axis)
+            for blob, predictions in zip(blob_batch, all_predictions):
+                bboxes = predictions['boxes'].detach()
+                scores = predictions['scores'].detach()
+                labels = predictions['labels']
+                if self.on_gpu:
+                    bboxes = bboxes.cpu()
+                    scores = scores.cpu()
+                    labels = labels.cpu()
+                img = _load_image(blob * 255, self._default_channel_axis)
 
-            for bbox, score, label in zip(bboxes.numpy(), scores.numpy(), labels.numpy()):
-                if score >= self.confidence_threshold:
-                    x0, y0, x1, y1 = bbox
-                    # note that tensors are [H, W] while PIL Images are [W, H]
-                    top, left = int(y0), int(x0)
-                    # target size must be (h, w)
-                    target_size = (int(y1) - int(y0), int(x1) - int(x0))
-                    # at this point, raw_img has the channel axis at the default tensor one
-                    _img, top, left = _crop_image(img, target_size=target_size, top=top, left=left, how='precise')
-                    _img = _move_channel_axis(np.asarray(_img).astype('float32'), -1, self.channel_axis)
-                    label_name = self.label_name_map[label]
-                    self.logger.debug(
-                        f'detected {label_name} with confidence {score} at position {(top, left)} and size {target_size}')
+                for bbox, score, label in zip(bboxes.numpy(), scores.numpy(), labels.numpy()):
+                    if score >= self.confidence_threshold:
+                        x0, y0, x1, y1 = bbox
+                        # note that tensors are [H, W] while PIL Images are [W, H]
+                        top, left = int(y0), int(x0)
+                        # target size must be (h, w)
+                        target_size = (int(y1) - int(y0), int(x1) - int(x0))
+                        # at this point, raw_img has the channel axis at the default tensor one
+                        _img, top, left = _crop_image(img, target_size=target_size, top=top, left=left, how='precise')
+                        _img = _move_channel_axis(np.asarray(_img).astype('float32'), -1, self.channel_axis)
+                        label_name = self.label_name_map[label]
+                        self.logger.debug(
+                            f'detected {label_name} with confidence {score} at position {(top, left)} and size {target_size}')
 
-                    # a chunk is created for each of the objects detected for each image
-                    d = Document(offset=0, weight=1., blob = _img, location=[top, left], tags={'label': label_name})
-                    docs[i].chunks.append(d)
+                        # a chunk is created for each of the objects detected for each image
+                        d = Document(offset=0, weight=1., blob = _img, location=[top, left], tags={'label': label_name})
+                        docs[i].chunks.append(d)
