@@ -10,6 +10,10 @@ from unittest.mock import patch
 from jina import Document, DocumentArray
 from jinahub.segmenter.torch_object_detection_segmenter import TorchObjectDetectionSegmenter
 
+import sys
+sys.path.insert(1, '../..')
+
+from torch_object_detection_segmenter import TorchObjectDetectionSegmenter
 
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -53,6 +57,29 @@ class MockModel:
     def to(self, device):
         return self
 
+def test_batching():
+    import torchvision.models.detection as detection_models
+    img_array = create_random_img_array(128, 64)
+    img_array = img_array / 255
+
+    segmenter = TorchObjectDetectionSegmenter(channel_axis=-1, confidence_threshold=0.1,
+                                              label_name_map={0: 'zero',
+                                                              1: 'one',
+                                                              2: 'two',
+                                                              3: 'three',
+                                                              60: 'sixty'})
+    test_docs = DocumentArray([Document(blob=img_array), Document(blob=img_array)])
+    segmenter.segment(test_docs, parameters={'batch_size':1})
+    print(test_docs[0].chunks)
+    docs_chunks = test_docs.get_attributes('chunks')
+    assert len(docs_chunks) == 2
+    print(docs_chunks)
+    #for chunks in docs_chunks:
+    chunks = docs_chunks[0]
+    assert len(chunks) == 2
+
+    chunks = docs_chunks[1]
+    assert(not chunks)
 
 def test_encoding_mock_model_results():
     import torchvision.models.detection as detection_models
@@ -65,7 +92,7 @@ def test_encoding_mock_model_results():
                                                                   2: 'two',
                                                                   3: 'three'})
         test_docs = DocumentArray([Document(blob=img_array), Document(blob=img_array)])
-        segmenter.segment(test_docs)
+        segmenter.segment(test_docs, {})
         docs_chunks = test_docs.get_attributes('chunks')
         assert len(docs_chunks) == 2
         for chunks in docs_chunks:
@@ -84,7 +111,7 @@ def test_encoding_fasterrcnn_results():
     img_array = img_array / 255
     segmenter = TorchObjectDetectionSegmenter(channel_axis=-1, confidence_threshold=0.98)
     test_docs = DocumentArray([Document(blob=img_array), Document(blob=img_array)])
-    segmenter.segment(test_docs)
+    segmenter.segment(test_docs, {})
     docs_chunks = test_docs.get_attributes('chunks')
     assert len(docs_chunks) == 2
     for chunks in docs_chunks:
@@ -113,7 +140,7 @@ def test_encoding_fasterrcnn_results_real_image():
     img_array = np.array(img).astype('float32') / 255
     segmenter = TorchObjectDetectionSegmenter(channel_axis=-1, confidence_threshold=0.9)
     test_docs = DocumentArray([Document(blob=img_array), Document(blob=img_array)])
-    segmenter.segment(test_docs)
+    segmenter.segment(test_docs, {})
     docs_chunks = test_docs.get_attributes('chunks')
     assert len(docs_chunks) == 2
     for chunks in docs_chunks:
@@ -226,7 +253,7 @@ def test_encoding_maskrcnn_results():
     segmenter = TorchObjectDetectionSegmenter(model_name='maskrcnn_resnet50_fpn',
                                               channel_axis=-1, confidence_threshold=0.98)
     test_docs = DocumentArray([Document(blob=img_array), Document(blob=img_array)])
-    segmenter.segment(test_docs)
+    segmenter.segment(test_docs, {})
     docs_chunks = test_docs.get_attributes('chunks')
     assert len(docs_chunks) == 2
     for chunks in docs_chunks:
@@ -258,7 +285,7 @@ def test_encoding_maskrcnn_results_real_image():
                                               channel_axis=-1, confidence_threshold=0.9)
 
     test_docs = DocumentArray([Document(blob=img_array), Document(blob=img_array)])
-    segmenter.segment(test_docs)
+    segmenter.segment(test_docs, {})
     docs_chunks = test_docs.get_attributes('chunks')
     assert len(docs_chunks) == 2
     for chunks in docs_chunks:

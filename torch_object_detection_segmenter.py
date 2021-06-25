@@ -2,14 +2,14 @@ __copyright__ = "Copyright (c) 2020-2021 Jina AI Limited. All rights reserved."
 __license__ = "Apache-2.0"
 
 
-from jina.logging import JinaLogger
+from jina.logging.logger import JinaLogger
 import numpy as np
 from typing import Dict, List, Union, Tuple, Optional, Any
 import torchvision.models.detection as detection_models
 
 from jina import Document, DocumentArray, Executor, requests
 
-def _batch_generator(data: List[Any], batch_size: int):
+def _batch_generator(data: DocumentArray, batch_size: int) -> DocumentArray:
     for i in range(0, len(data), batch_size):
         yield data[i: i + batch_size]
 
@@ -55,6 +55,7 @@ class TorchObjectDetectionSegmenter(Executor):
                  *args, **kwargs):
         """Set constructor"""
         super().__init__(*args, **kwargs)
+        self.logger = JinaLogger(self.__class__.__name__)
         self.on_gpu = on_gpu
         self.model_name = model_name or 'fasterrcnn_resnet50_fpn'
         self.channel_axis = channel_axis
@@ -62,14 +63,14 @@ class TorchObjectDetectionSegmenter(Executor):
         self._default_batch_size = default_batch_size
         self.confidence_threshold = confidence_threshold
         self.label_name_map = label_name_map or TorchObjectDetectionSegmenter.COCO_INSTANCE_CATEGORY_NAMES
-        model = getattr(detection_models, self.model_name)(pretrained=True, pretrained_backbone=True)
-        self.model = model.eval()
+        self.model = getattr(detection_models, self.model_name)(pretrained=True, pretrained_backbone=True)
+        self.model.eval()
 
     def _predict(self, batch: List[np.ndarray]) -> 'np.ndarray':
         """
         Run the model for prediction
         :param img: the image from which to run a prediction
-        :return: the boxes, scores and labels predicted
+        :return: the boxes, scores and labels predictedx
         """
         import torch
         _input = torch.from_numpy(np.stack(batch).astype('float32'))
@@ -159,17 +160,16 @@ class TorchObjectDetectionSegmenter(Executor):
             return
 
         batch_size = parameters.get('batch_size', self._default_batch_size)
-        print(f'batch_size {batch_size}')
-        assert(False)
-        assert(batch_size==1)
-        batch = _batch_generator(docs, batch_size)
+        batch = list(_batch_generator(docs, batch_size))[0]
+        batch = batch.get_attributes('blob')
+
         # the blob dimension of imgs/cars.jpg at this point is (2, 681, 1264, 3)
         # "Ensure the color channel axis is the default axis." i.e. c comes first
         # e.g. (h,w,c) -> (c,h,w) / (b,h,w,c) -> (b,c,h,w)
         batch = _move_channel_axis(batch, self.channel_axis, self._default_channel_axis + 1) # take batching into account
 
         batched_predictions = self._predict(batch)
-
+        print(batched_predictions)
 
         for i, (image, predictions) in enumerate(zip(batch, batched_predictions)):
             bboxes = predictions['boxes'].detach()
@@ -182,7 +182,10 @@ class TorchObjectDetectionSegmenter(Executor):
             img = _load_image(image * 255, self._default_channel_axis)
 
             for bbox, score, label in zip(bboxes.numpy(), scores.numpy(), labels.numpy()):
+                print(score)
+                print(self.confidence_threshold)
                 if score >= self.confidence_threshold:
+                    print('wtf')
                     x0, y0, x1, y1 = bbox
                     # note that tensors are [H, W] while PIL Images are [W, H]
                     top, left = int(y0), int(x0)
@@ -192,10 +195,9 @@ class TorchObjectDetectionSegmenter(Executor):
                     _img, top, left = _crop_image(img, target_size=target_size, top=top, left=left, how='precise')
                     _img = _move_channel_axis(np.asarray(_img).astype('float32'), -1, self.channel_axis)
                     label_name = self.label_name_map[label]
-                    JinaLogger.debug(
+                    self.logger.debug(
                         f'detected {label_name} with confidence {score} at position {(top, left)} and size {target_size}')
 
                     # a chunk is created for each of the objects detected for each image
                     d = Document(offset=0, weight=1., blob = _img, location=[top, left], tags={'label': label_name})
-
                     docs[i].chunks.append(d)
