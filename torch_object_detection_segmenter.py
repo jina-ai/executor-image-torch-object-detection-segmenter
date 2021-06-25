@@ -2,7 +2,7 @@ __copyright__ = "Copyright (c) 2020-2021 Jina AI Limited. All rights reserved."
 __license__ = "Apache-2.0"
 
 
-import logging
+from jina.logging import JinaLogger
 import numpy as np
 from typing import Dict, List, Union, Tuple, Optional, Any
 import torchvision.models.detection as detection_models
@@ -192,7 +192,7 @@ class TorchObjectDetectionSegmenter(Executor):
                     _img, top, left = _crop_image(img, target_size=target_size, top=top, left=left, how='precise')
                     _img = _move_channel_axis(np.asarray(_img).astype('float32'), -1, self.channel_axis)
                     label_name = self.label_name_map[label]
-                    logging.debug(
+                    JinaLogger.debug(
                         f'detected {label_name} with confidence {score} at position {(top, left)} and size {target_size}')
 
                     # a chunk is created for each of the objects detected for each image
