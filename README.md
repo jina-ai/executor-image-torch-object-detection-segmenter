@@ -1,6 +1,6 @@
 # ✨ TorchObjectDetectionSegmenter
 
-**TorchObjectDetectionSegmenter** is a class that ...
+**TorchObjectDetectionSegmenter** is a class that supports object detection and bounding box extraction using PyTorch with Faster R-CNN and Mask R-CNN models.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -14,8 +14,7 @@
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## 🌱 Prerequisites
-
-Some conditions to fulfill before running the executor
+None
 
 ## 🚀 Usages
 
@@ -104,19 +103,21 @@ from jina import Flow, Document
 f = Flow().add(uses='jinahub+docker://TorchObjectDetectionSegmenter')
 
 with f:
-    resp = f.post(on='foo', inputs=Document(), return_resutls=True)
+    resp = f.post(on='foo', inputs=Document(), return_results=True)
 	print(f'{resp}')
 ```
 
 ### Inputs 
 
-`Document` with `blob` of the shape `256`.
+`Document` whose `blob` stores the image to be detected with values between 0-1 and has color channel at the last axis.
 
 ### Returns
 
-`Document` with `embedding` fields filled with an `ndarray` of the shape `embedding_dim` (=128, by default) with `dtype=nfloat32`.
+`Document` with `chunks` that contain the original image in `blob`, bounding box coordinates of objects detected in `location`, and image label key value pair in `tags`.
 
 
 ## 🔍️ Reference
-- Some reference
+- [Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks](https://arxiv.org/abs/1506.01497)
+- [Mask R-CNN](https://arxiv.org/abs/1703.06870)
+- [TORCHVISION OBJECT DETECTION FINETUNING TUTORIAL](https://pytorch.org/tutorials/intermediate/torchvision_tutorial.html)
 
