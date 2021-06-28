@@ -1,14 +1,13 @@
 __copyright__ = "Copyright (c) 2020-2021 Jina AI Limited. All rights reserved."
 __license__ = "Apache-2.0"
 
-
-from jina.logging.logger import JinaLogger
-import numpy as np
 from typing import Dict, List, Union, Tuple, Optional, Any
+
+import numpy as np
 import torchvision.models.detection as detection_models
 
 from jina import Document, DocumentArray, Executor, requests
-
+from jina.logging.logger import JinaLogger
 
 def _batch_generator(data: List[Any], batch_size: int):
     for i in range(0, len(data), batch_size):
