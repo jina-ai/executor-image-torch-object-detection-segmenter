@@ -161,23 +161,20 @@ class TorchObjectDetectionSegmenter(Executor):
         def _get_input_data(docs: DocumentArray, parameters: dict):
             traversal_paths = parameters.get('traversal_paths', self._default_traversal_paths)
             batch_size = parameters.get('batch_size', self._default_batch_size)
-            assert (len(docs) == 2)
             # traverse thought all documents which have to be processed
             flat_docs = docs.traverse_flat(traversal_paths)
-            assert (len(flat_docs) == 2)
             # filter out documents without images
             filtered_docs = [doc for doc in flat_docs if doc.blob is not None]
-            assert(len(filtered_docs)==2)
             return _batch_generator(filtered_docs, batch_size)
 
         if not docs:
             return
 
 
-        batch = _get_input_data(docs, parameters) # a generator of batches of docs
-        for docs_batch in batch:
+        # traverse through a generator of batches of docs
+        for docs_batch in _get_input_data(docs, parameters):
             # the blob dimension of imgs/cars.jpg at this point is (2, 681, 1264, 3)
-            # "Ensure the color channel axis is the default axis." i.e. c comes first
+            # Ensure the color channel axis is the default axis. i.e. c comes first
             # e.g. (h,w,c) -> (c,h,w) / (b,h,w,c) -> (b,c,h,w)
             blob_batch = [_move_channel_axis(d.blob, self.channel_axis,
                                        self._default_channel_axis) for d in docs_batch]
