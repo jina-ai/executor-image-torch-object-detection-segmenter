@@ -153,7 +153,7 @@ class TorchObjectDetectionSegmenter(Executor):
             img = img.crop((w_beg, h_beg, w_end, h_end))
             return img, h_beg, w_beg
 
-        def _get_input_data(docs: DocumentArray, parameters: dict):
+        def _get_filtered_docs_batch_generator(docs: DocumentArray, parameters: dict):
             traversal_paths = parameters.get('traversal_paths', self._default_traversal_paths)
             batch_size = parameters.get('batch_size', self._default_batch_size)
             # traverse thought all documents which have to be processed
@@ -167,7 +167,7 @@ class TorchObjectDetectionSegmenter(Executor):
 
 
         # traverse through a generator of batches of docs
-        for docs_batch in _get_input_data(docs, parameters):
+        for docs_batch in _get_filtered_docs_batch_generator(docs, parameters):
             # the blob dimension of imgs/cars.jpg at this point is (2, 681, 1264, 3)
             # Ensure the color channel axis is the default axis. i.e. c comes first
             # e.g. (h,w,c) -> (c,h,w) / (b,h,w,c) -> (b,c,h,w)
