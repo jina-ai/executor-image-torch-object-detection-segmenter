@@ -175,7 +175,7 @@ class TorchObjectDetectionSegmenter(Executor):
 
 
         batch = _get_input_data(docs, parameters) # a generator of batches of docs
-        for i, docs_batch in enumerate(batch):
+        for docs_batch in batch:
             # the blob dimension of imgs/cars.jpg at this point is (2, 681, 1264, 3)
             # "Ensure the color channel axis is the default axis." i.e. c comes first
             # e.g. (h,w,c) -> (c,h,w) / (b,h,w,c) -> (b,c,h,w)
