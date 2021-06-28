@@ -8,8 +8,11 @@ from PIL import Image
 from unittest.mock import patch
 
 from jina import Document, DocumentArray
-from jinahub.segmenter.torch_object_detection_segmenter import TorchObjectDetectionSegmenter
+#from jinahub.segmenter.torch_object_detection_segmenter import TorchObjectDetectionSegmenter
 
+import sys
+sys.path.insert(1, '../..')
+from torch_object_detection_segmenter import TorchObjectDetectionSegmenter
 
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -69,7 +72,6 @@ def test_encoding_mock_model_results():
         docs_chunks = test_docs.get_attributes('chunks')
         assert len(docs_chunks) == 2
         for chunks in docs_chunks:
-            # print(f'chunks {chunks}') dunno why it's two pairs of duplicate chunks
             assert len(chunks) == 2
             assert chunks[0].blob.shape == (25, 20, 3)
             assert chunks[0].location == [15, 10]

@@ -86,9 +86,9 @@ class TorchObjectDetectionSegmenter(Executor):
     def segment(self, docs: DocumentArray, parameters: dict, *args, **kwargs) -> List[Dict]:
         """
         Crop the input image array within DocumentArray.
-        :param blob: the ndarray of the image
+        :param docs: docs containing the ndarrays of the images
         :return: a list of chunk dicts with the cropped images
-        :param args:  Additional positional arguments
+        :param args:  Additional positional arguments e.g. traversal_paths, batch_size
         :param kwargs: Additional keyword arguments
         """
 
@@ -161,13 +161,13 @@ class TorchObjectDetectionSegmenter(Executor):
         def _get_input_data(docs: DocumentArray, parameters: dict):
             traversal_paths = parameters.get('traversal_paths', self._default_traversal_paths)
             batch_size = parameters.get('batch_size', self._default_batch_size)
-
+            assert (len(docs) == 2)
             # traverse thought all documents which have to be processed
             flat_docs = docs.traverse_flat(traversal_paths)
-
+            assert (len(flat_docs) == 2)
             # filter out documents without images
             filtered_docs = [doc for doc in flat_docs if doc.blob is not None]
-
+            assert(len(filtered_docs)==2)
             return _batch_generator(filtered_docs, batch_size)
 
         if not docs:
@@ -175,17 +175,15 @@ class TorchObjectDetectionSegmenter(Executor):
 
 
         batch = _get_input_data(docs, parameters) # a generator of batches of docs
-
         for i, docs_batch in enumerate(batch):
             # the blob dimension of imgs/cars.jpg at this point is (2, 681, 1264, 3)
             # "Ensure the color channel axis is the default axis." i.e. c comes first
             # e.g. (h,w,c) -> (c,h,w) / (b,h,w,c) -> (b,c,h,w)
             blob_batch = [_move_channel_axis(d.blob, self.channel_axis,
                                        self._default_channel_axis) for d in docs_batch]
-
             all_predictions = self._predict(blob_batch)
 
-            for blob, predictions in zip(blob_batch, all_predictions):
+            for doc, blob, predictions in zip(docs_batch, blob_batch, all_predictions):
                 bboxes = predictions['boxes'].detach()
                 scores = predictions['scores'].detach()
                 labels = predictions['labels']
@@ -211,4 +209,4 @@ class TorchObjectDetectionSegmenter(Executor):
 
                         # a chunk is created for each of the objects detected for each image
                         d = Document(offset=0, weight=1., blob = _img, location=[top, left], tags={'label': label_name})
-                        docs[i].chunks.append(d)
+                        doc.chunks.append(d)
