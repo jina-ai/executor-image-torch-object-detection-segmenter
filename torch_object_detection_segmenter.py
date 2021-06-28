@@ -22,8 +22,6 @@ class TorchObjectDetectionSegmenter(Executor):
     of the objects with a confidence higher than a threshold.
     :param model_name: the name of the model. Supported models include
         ``fasterrcnn_resnet50_fpn``, ``maskrcnn_resnet50_fpn`
-    :param channel_axis: the axis id of the color channel,
-        ``-1`` indicates the color channel info at the last axis
     :param confidence_threshold: confidence value from which it
         considers a positive detection and therefore the object detected will be cropped and returned
     :param label_name_map: A Dict mapping from label index to label name, by default will be
@@ -49,7 +47,6 @@ class TorchObjectDetectionSegmenter(Executor):
 
     def __init__(self, model_name: Optional[str] = None,
                  on_gpu: bool = False,
-                 channel_axis: int = 0,
                  default_traversal_paths: List[str] = ['r'],
                  default_batch_size: int = 32,
                  confidence_threshold: float = 0.0,
@@ -60,7 +57,6 @@ class TorchObjectDetectionSegmenter(Executor):
         self.logger = JinaLogger(self.__class__.__name__)
         self.on_gpu = on_gpu
         self.model_name = model_name or 'fasterrcnn_resnet50_fpn'
-        self.channel_axis = channel_axis
         self._default_channel_axis = 0
         self._default_batch_size = default_batch_size
         self._default_traversal_paths = default_traversal_paths
@@ -176,7 +172,7 @@ class TorchObjectDetectionSegmenter(Executor):
             # the blob dimension of imgs/cars.jpg at this point is (2, 681, 1264, 3)
             # Ensure the color channel axis is the default axis. i.e. c comes first
             # e.g. (h,w,c) -> (c,h,w) / (b,h,w,c) -> (b,c,h,w)
-            blob_batch = [_move_channel_axis(d.blob, self.channel_axis,
+            blob_batch = [_move_channel_axis(d.blob, -1,
                                        self._default_channel_axis) for d in docs_batch]
             all_predictions = self._predict(blob_batch)
 
@@ -199,7 +195,7 @@ class TorchObjectDetectionSegmenter(Executor):
                         target_size = (int(y1) - int(y0), int(x1) - int(x0))
                         # at this point, raw_img has the channel axis at the default tensor one
                         _img, top, left = _crop_image(img, target_size=target_size, top=top, left=left, how='precise')
-                        _img = _move_channel_axis(np.asarray(_img).astype('float32'), -1, self.channel_axis)
+                        _img = np.asarray(_img).astype('float32')
                         label_name = self.label_name_map[label]
                         self.logger.debug(
                             f'detected {label_name} with confidence {score} at position {(top, left)} and size {target_size}')

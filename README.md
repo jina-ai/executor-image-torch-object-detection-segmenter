@@ -109,7 +109,7 @@ with f:
 
 ### Inputs 
 
-`Document` whose `blob` stores the image to be detected and has color channel at the last axis.
+`Document` whose `blob` stores the image to be detected with values between 0-1 and has color channel at the last axis.
 
 ### Returns
 
