@@ -1,6 +1,6 @@
 # ✨ TorchObjectDetectionSegmenter
 
-**TorchObjectDetectionSegmenter** is a class that supports object detection and segmentation using PyTorch with Faster R-CNN and Mask R-CNN models.
+**TorchObjectDetectionSegmenter** is a class that supports object detection and bounding box extraction using PyTorch with Faster R-CNN and Mask R-CNN models.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -103,13 +103,13 @@ from jina import Flow, Document
 f = Flow().add(uses='jinahub+docker://TorchObjectDetectionSegmenter')
 
 with f:
-    resp = f.post(on='foo', inputs=Document(), return_resutls=True)
+    resp = f.post(on='foo', inputs=Document(), return_results=True)
 	print(f'{resp}')
 ```
 
 ### Inputs 
 
-`Document` whose `blob` stores the image to be detected.
+`Document` whose `blob` stores the image to be detected and has color channel at the last axis.
 
 ### Returns
 
