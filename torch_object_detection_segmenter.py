@@ -19,6 +19,7 @@ class TorchObjectDetectionSegmenter(Executor):
     from an image using `torchvision detection models`
     and crops the images according tothe detected bounding boxes
     of the objects with a confidence higher than a threshold.
+    :param on_gpu: set to True if using GPU
     :param model_name: the name of the model. Supported models include
         ``fasterrcnn_resnet50_fpn``, ``maskrcnn_resnet50_fpn`
     :param confidence_threshold: confidence value from which it
