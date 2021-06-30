@@ -1,3 +1,3 @@
 torch==1.8.1
 torchvision==0.9.1
-jina==2.0.0rc10
+jina[hub]==2.0.0
