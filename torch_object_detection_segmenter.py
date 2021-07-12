@@ -1,7 +1,7 @@
 __copyright__ = "Copyright (c) 2020-2021 Jina AI Limited. All rights reserved."
 __license__ = "Apache-2.0"
 
-from typing import Dict, List, Union, Tuple, Optional, Any
+from typing import Dict, List, Tuple, Optional
 
 import numpy as np
 import torchvision.models.detection as detection_models
@@ -46,7 +46,7 @@ class TorchObjectDetectionSegmenter(Executor):
 
     def __init__(self, model_name: Optional[str] = None,
                  on_gpu: bool = False,
-                 default_traversal_paths: Optional[List[str]] = None,
+                 default_traversal_paths: Tuple = ('r', ),
                  default_batch_size: int = 32,
                  confidence_threshold: float = 0.0,
                  label_name_map: Optional[Dict[int, str]] = None,
@@ -58,7 +58,7 @@ class TorchObjectDetectionSegmenter(Executor):
         self.model_name = model_name or 'fasterrcnn_resnet50_fpn'
         self._default_channel_axis = 0
         self.default_batch_size = default_batch_size
-        self.default_traversal_paths = default_traversal_paths or ['r']
+        self.default_traversal_paths = default_traversal_paths
         self.confidence_threshold = confidence_threshold
         self.label_name_map = label_name_map or TorchObjectDetectionSegmenter.COCO_INSTANCE_CATEGORY_NAMES
         self.model = getattr(detection_models, self.model_name)(pretrained=True, pretrained_backbone=True).eval()
